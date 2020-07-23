@@ -1,19 +1,54 @@
 import struct
 import socket
+from netaddr import *
 from . import packetMaker
 
 def data_link_unpack(data):
     dest_mac, src_mac, proto = unpack('! 6s 6s H', data[:14])
     return [get_mac_addr(dest_mac), get_mac_addr(src_mac), socket.htons(proto), data[14:]]
 
+
 def network_unpack(data):
+    ver = (unpack('!B', data[:8])) >> 4
+    print(type(ver))
     maindata = data
-    data = unpack('!BBHHHBBH4s4s', data[:20])
-    return [(data[0] >> 4), (data[0] & 0xF) * 4, data[1], data[2],
-    data[3], data[4] >> 13, data[4] & 0x1FFF, data[5],
-    data[6], hex(data[7]), socket.inet_ntoa(data[8]),
-    socket.inet_ntoa(data[9]), maindata[((data[0] & 0xF) * 4):]]
-    
+    if (ver == "0100"):
+        data = unpack('!BBHHHBBH4s4s', data[:20])
+        header = {
+            'versoin': 'IPv4',
+            'header_len': (data[0] & 0xF) * 4,  # ??*4
+            'TOS': data[1],
+            'lenght': data[2],
+            '16_bit_identifier': data[3],
+            'flags': data[4] >> 13,
+            'fragment_offset': data[4] & 0x1FFF,
+            'TTL': data[5],
+            'upper_layer': data[6],
+            'header_checksum':  hex(data[7]),
+            '32_bit_sourceIP': socket.inet_ntoa(data[8]),
+            '32_bit_destinationIP': socket.inet_ntoa(data[9])
+        }
+        return [header, maindata[header['header_len']:]]
+    elif (ver == "0110"):
+        data = unpack('!IHBB16s16s', data[:40])
+        header = {
+            'versoin': 'IPv6',
+            'pri': (data[0] >> 20) & 0xFF,
+            'flow_table': data[0] & 0xFFFFF,
+            'payload_len': data[1],
+            'upper_layer': data[2],
+            'hop_limit': data[3],
+            '128_bit_sourceIP': socket.inet_ntoa(data[4]),
+            '128_bit_destinationIP': socket.inet_ntoa(data[5])
+        }
+        return(header, data[40:])
+
+
+def icmp_unpack(data):
+    type, code, checksum = unpack('!BBH', data[:4])
+    return [type, code, hex(checksum), repr(data[4:])]
+
+
 
 def transport_unpack(data,version):
     payload = None
@@ -56,3 +91,13 @@ def transport_unpack(data,version):
         header['service']=packetMaker.services[str(header['dst_port'])]
         payload = data[(32*header['data_offset']):]
         return header,payload
+
+
+
+# Total unpack
+raw_data = 'FF00000000000000000000F0F0F'.encode()
+ether_header = data_link_unpack(raw_data)
+network_header = network_unpack(ether_header[3])
+if (network_header['upper_layer'] == 1):
+    icmp_header = icmp_unpack(network_header[-1])
+    
