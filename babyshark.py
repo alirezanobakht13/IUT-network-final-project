@@ -47,3 +47,7 @@ if __name__=="__main__":
 #             print('TCP header is : -----------------')
 #             print(tcpheader)
 #             print(lw.app_unpack(data,tcpheader['service'])['content'])
+
+
+
+print(bin(1))

@@ -72,84 +72,86 @@ def network_unpack(data):
 
 
 def icmp_unpack(data):
-    type, code, checksum = unpack('!BBH', data[:4])
-    return [type, code, hex(checksum), repr(data[4:])]
+    type, code, checksum = unpack('! B B H', data[:4])
+    return type, code, hex(checksum), repr(data[4:])
 
 
-def transport_unpack(data,version):
+def transport_unpack(data, version):
     payload = None
     header = {}
-    if version.upper()=="UDP":
+    if version.upper() == "UDP":
         payload = data[8:]
-        hdr = struct.unpack('!HHHH',data[:8])
+        hdr = struct.unpack('!HHHH', data[:8])
         header = {
-            'protocol':'UDP',
-            'src_port':hdr[0],
-            'dst_port':hdr[1],
-            'length':hdr[2],
-            'checksum':hdr[3]
+            'protocol': 'UDP',
+            'src_port': hdr[0],
+            'dst_port': hdr[1],
+            'length': hdr[2],
+            'checksum': hdr[3]
         }
-        header['service']=packetMaker.services.get(str(header['dst_port']),None)
-        return header,payload
-    elif version.upper()=='TCP':
-        hdr = struct.unpack('!HHIIBBHHH',data[:20])
+        header['service'] = packetMaker.services.get(
+            str(header['dst_port']), None)
+        return header, payload
+    elif version.upper() == 'TCP':
+        hdr = struct.unpack('!HHIIBBHHH', data[:20])
         header = {
-            'protocol':'TCP',
-            'src_port':hdr[0],
-            'dst_port':hdr[1],
-            'seq_number':hdr[2],
-            'ack_number':hdr[3],
-            'data_offset':hdr[4]>>4,  # it should multiply to 4 to be in byte
-            'NS':hdr[4] & 0x1,
-            'CWR':hdr[5]>>7,
-            'ECE':(hdr[5]>>6) & 0x1,
-            'URG':(hdr[5]>>5) & 0x1,
-            'ACK':(hdr[5]>>4) & 0x1,
-            'PSH':(hdr[5]>>3) & 0x1,
-            'RST':(hdr[5]>>2) & 0x1,
-            'SYN':(hdr[5]>>1) & 0x1,
-            'FIN':hdr[5] & 0x1,
-            'window_size':hdr[6],
-            'checksum':hdr[7],
-            'urg_ptr':hdr[8],
-            'options':data[160:(32*(hdr[4]>>4))]
+            'protocol': 'TCP',
+            'src_port': hdr[0],
+            'dst_port': hdr[1],
+            'seq_number': hdr[2],
+            'ack_number': hdr[3],
+            # it should multiply to 4 to be in byte
+            'data_offset': hdr[4] >> 4,
+            'NS': hdr[4] & 0x1,
+            'CWR': hdr[5] >> 7,
+            'ECE': (hdr[5] >> 6) & 0x1,
+            'URG': (hdr[5] >> 5) & 0x1,
+            'ACK': (hdr[5] >> 4) & 0x1,
+            'PSH': (hdr[5] >> 3) & 0x1,
+            'RST': (hdr[5] >> 2) & 0x1,
+            'SYN': (hdr[5] >> 1) & 0x1,
+            'FIN': hdr[5] & 0x1,
+            'window_size': hdr[6],
+            'checksum': hdr[7],
+            'urg_ptr': hdr[8],
+            'options': data[160:(32*(hdr[4] >> 4))]
         }
-        header['service']=packetMaker.services.get(str(header['dst_port']),None)
+        header['service'] = packetMaker.services.get(
+            str(header['dst_port']), None)
         payload = data[(4*header['data_offset']):]
-        return header,payload
+        return header, payload
 
 
 # ------------extract name in dns query -------------
-def extract_name(data,ptr):
+def extract_name(data, ptr):
     domain = ""
     while True:
-        count = struct.unpack('!B',data[ptr:ptr+1])
+        count = struct.unpack('!B', data[ptr:ptr+1])
         count = count[0]
         if count == 0:
-            ptr+=1
-            return ptr,domain[:len(domain)-1]
-        
+            ptr += 1
+            return ptr, domain[:len(domain)-1]
+
         if (count >> 6) == 3:
-            offset = struct.unpack('!H',data[ptr:ptr+2])
+            offset = struct.unpack('!H', data[ptr:ptr+2])
             offset = offset[0]
             offset = offset & 0x3FFF
-            temp_ptr,temp_domain = extract_name(data,offset)
-            domain+=temp_domain
-            ptr+=2
-            return ptr,domain[:len(domain)]
-        
+            temp_ptr, temp_domain = extract_name(data, offset)
+            domain += temp_domain
+            ptr += 2
+            return ptr, domain[:len(domain)]
 
-        ptr+=1
+        ptr += 1
         for i in range(count):
-            temp_char = struct.unpack('!B',data[ptr:ptr+1])
+            temp_char = struct.unpack('!B', data[ptr:ptr+1])
             temp_char = temp_char[0]
-            domain+=str(chr(temp_char))
-            ptr+=1
-        domain+="."
+            domain += str(chr(temp_char))
+            ptr += 1
+        domain += "."
 
 
 def DNS(data):
-    raw_header = struct.unpack('!HHHHHH',data[:12])
+    raw_header = struct.unpack('!HHHHHH', data[:12])
     identification = raw_header[0]
     flags = raw_header[1]
     No_questions = raw_header[2]
@@ -162,12 +164,12 @@ def DNS(data):
     # ----------- extracting questions ------------
     questions = []
     for _ in range(No_questions):
-        ptr,domain = extract_name(data,ptr)
-        qtype = struct.unpack('!H',data[ptr:ptr+2])
+        ptr, domain = extract_name(data, ptr)
+        qtype = struct.unpack('!H', data[ptr:ptr+2])
         qtype = qtype[0]
-        ptr+=2
-        qtype_name =''
-        
+        ptr += 2
+        qtype_name = ''
+
         # defining query type:
         if qtype == 0x0001:
             qtype_name = 'A'
@@ -176,30 +178,29 @@ def DNS(data):
         elif qtype == 0x000f:
             qtype_name = 'MX'
         elif qtype == 0x0005:
-            qtype_name ='CNAME'
+            qtype_name = 'CNAME'
         else:
             qtype_name = str(qtype)
-        
-        qclass = struct.unpack('!H',data[ptr:ptr+2])
+
+        qclass = struct.unpack('!H', data[ptr:ptr+2])
         qclass = qclass[0]
-        ptr+=2
+        ptr += 2
         qclass_name = ''
         if qclass == 0x0001:
             qclass_name = "INTERNET"
         else:
             qclass_name = str(qclass)
-        
-        questions.append((domain,qtype_name,qclass_name))
-    
+
+        questions.append((domain, qtype_name, qclass_name))
 
     answers = []
     for _ in range(No_answers):
-        ptr, name = extract_name(data,ptr)
-        #response type:
-        qtype = struct.unpack('!H',data[ptr:ptr+2])
+        ptr, name = extract_name(data, ptr)
+        # response type:
+        qtype = struct.unpack('!H', data[ptr:ptr+2])
         qtype = qtype[0]
-        ptr+=2
-        qtype_name =''
+        ptr += 2
+        qtype_name = ''
         if qtype == 0x0001:
             qtype_name = 'A'
         elif qtype == 0x0002:
@@ -207,119 +208,179 @@ def DNS(data):
         elif qtype == 0x000f:
             qtype_name = 'MX'
         elif qtype == 0x0005:
-            qtype_name ='CNAME'
+            qtype_name = 'CNAME'
         else:
             qtype_name = str(qtype)
 
-        #response class:
-        qclass = struct.unpack('!H',data[ptr:ptr+2])
+        # response class:
+        qclass = struct.unpack('!H', data[ptr:ptr+2])
         qclass = qclass[0]
-        ptr+=2
+        ptr += 2
         qclass_name = ''
         if qclass == 0x0001:
             qclass_name = "INTERNET"
         else:
             qclass_name = str(qclass)
 
-        #TTL
-        ttl = struct.unpack('!I',data[ptr:ptr+4])
+        # TTL
+        ttl = struct.unpack('!I', data[ptr:ptr+4])
         ttl = ttl[0]
-        ptr+=4
+        ptr += 4
 
-        #RDLENGTH
-        rdlength = struct.unpack('!H',data[ptr:ptr+2])
+        # RDLENGTH
+        rdlength = struct.unpack('!H', data[ptr:ptr+2])
         rdlength = rdlength[0]
-        ptr+=2
+        ptr += 2
 
         if qtype_name == 'NS' or qtype_name == 'MX' or qtype_name == 'CNAME':
-            temp,rdata = extract_name(data,ptr)
+            temp, rdata = extract_name(data, ptr)
         elif qtype_name == 'A':
-            ip_addr = struct.unpack('!BBBB',data[ptr:ptr+4])
+            ip_addr = struct.unpack('!BBBB', data[ptr:ptr+4])
             rdata = f'{ip_addr[0]}.{ip_addr[1]}.{ip_addr[2]}.{ip_addr[3]}'
-        else :
+        else:
             rdata = data[ptr:ptr+rdlength]
-        ptr+=rdlength
-        answers.append((name,qtype_name,qclass_name,ttl,rdlength,rdata))
+        ptr += rdlength
+        answers.append((name, qtype_name, qclass_name, ttl, rdlength, rdata))
 
-    #TODO add auth and additional if needed
+    # TODO add auth and additional if needed
 
     unpacked = {
-        'identification':identification,
-        'QR':flags>>15,
-        'OPCODE':(flags>>11)& 0xf,
-        'AA':(flags>>10) & 0x1,
-        'TC':(flags>>9) & 0x1,
-        'RD':(flags>>8) & 0x1,
-        'RA':(flags>>7) & 0x1,
-        'Z':(flags>>4) & 0x7,
-        'RCODE':flags & 0xf,
-        'question_count':No_questions,
-        'answer_count':No_answers,
-        'auth_count':No_auths,
-        'additional_count':No_additional,
-        'questions':questions,
-        'answer':answers
+        'identification': identification,
+        'QR': flags >> 15,
+        'OPCODE': (flags >> 11) & 0xf,
+        'AA': (flags >> 10) & 0x1,
+        'TC': (flags >> 9) & 0x1,
+        'RD': (flags >> 8) & 0x1,
+        'RA': (flags >> 7) & 0x1,
+        'Z': (flags >> 4) & 0x7,
+        'RCODE': flags & 0xf,
+        'question_count': No_questions,
+        'answer_count': No_answers,
+        'auth_count': No_auths,
+        'additional_count': No_additional,
+        'questions': questions,
+        'answer': answers
     }
 
     return unpacked
-        
 
-def app_unpack(data,version):
+
+def app_unpack(data, version):
     # TODO : check is decode type for http true of not
-    if version=='http':
+    if version == 'http':
         return {
-            'type':'http',
-            'content':data.decode('ascii')
+            'type': 'http',
+            'content': data.decode('ascii')
         }
-    
+
     if version == 'dns':
         return {
-            'type':'dns',
-            'content':DNS(data)
+            'type': 'dns',
+            'content': DNS(data)
         }
 
 
-def save_pcap(packets:list):
+def save_pcap(packets: list):
     max_size = 0
     for packet in packets:
-        max_size = max(max_size,len(packet[1]))
-    
-    magic_number = 0xa1b2c3d4   #unsigned 32
-    version_major = 2           #unsigned 16
-    version_minor = 4           #unsigned 16
-    thiszone = 0                #signed 32
-    sigfigs = 0                 #unsigned 32
-    snaplen = max_size          #unsigned 32
-    network = 1                 #unsigned 32 ---REVIEW : maybe edit is needed
+        max_size = max(max_size, len(packet[1]))
 
-    global_header = struct.pack('!IHHiIII',magic_number,version_major,version_minor,thiszone,sigfigs,snaplen,network)
+    magic_number = 0xa1b2c3d4  # unsigned 32
+    version_major = 2  # unsigned 16
+    version_minor = 4  # unsigned 16
+    thiszone = 0  # signed 32
+    sigfigs = 0  # unsigned 32
+    snaplen = max_size  # unsigned 32
+    network = 1  # unsigned 32 ---REVIEW : maybe edit is needed
+
+    global_header = struct.pack('!IHHiIII', magic_number, version_major,
+                                version_minor, thiszone, sigfigs, snaplen, network)
     data = global_header
     for packet in packets:
         timestamp = packet[0]
 
-        ts_sec,ts_usec = str(timestamp).split('.')
+        ts_sec, ts_usec = str(timestamp).split('.')
         ts_sec = int(ts_sec)
         ts_usec = int(ts_usec)
         incl_len = len(packet[1])
         orig_len = incl_len
 
-        packet_header = struct.pack('!IIII',ts_sec,ts_usec,incl_len,orig_len)
+        packet_header = struct.pack(
+            '!IIII', ts_sec, ts_usec, incl_len, orig_len)
 
-        data+=packet_header
-        data+=packet[1]
-    
+        data += packet_header
+        data += packet[1]
+
     working_dir = os.getcwd()
-    save_dir = os.path.join(working_dir,'Pcaps')
+    save_dir = os.path.join(working_dir, 'Pcaps')
     try:
         os.mkdir(save_dir)
     except:
         pass
 
-    file_name = str(datetime.datetime.fromtimestamp(packets[0][0])).split('.')[0].replace(':','-') +'.pcap'
-    with open(os.path.join(save_dir,file_name),'w+b') as f:
+    file_name = str(datetime.datetime.fromtimestamp(packets[0][0])).split('.')[
+        0].replace(':', '-') + '.pcap'
+    with open(os.path.join(save_dir, file_name), 'w+b') as f:
         f.write(data)
 
 
+def show_summay(raw_data):
+    dest_mac, src_mac, eth_proto, data = data_link_unpack(raw_data)
+    if (eth_proto == 1544):  # if little endian 2054  0x0806
+        ARP_header, data = ARP_unpack(data)
+        print(ARP_header['sender_IP_add'], "\t",
+              ARP_header['sender_IP_add'], "\t", "ARP")
+    elif (eth_proto == 8 or eth_proto == 56710):  # 2048
+        network_header, data = network_unpack(data)
+        if (network_header['upper_layer'] == 1):
+            print(network_header['32_bit_sourceIP'], "\t",
+                  network_header['32_bit_destinationIP'], "\t", "ICMP")
+        elif(network_header['upper_layer'] == 6):
+            print(network_header['32_bit_sourceIP'], "\t",
+                  network_header['32_bit_destinationIP'], "\t", "TCP")
+        elif(network_header['upper_layer'] == 17):
+            print(network_header['32_bit_sourceIP'], "\t",
+                  network_header['32_bit_destinationIP'], "\t", "UDP")
+    else:
+        print(dest_mac, "\t", src_mac, "\tother type")
+
+
+def show_all(raw_data):
+    # Ethernet
+    dest_mac, src_mac, eth_proto, data = data_link_unpack(raw_data)
+    print("Ethernet :\n\tDestination : ", dest_mac,
+          "\n\tSource : ", src_mac, "\n\tType : ", eth_proto)
+    # ARP
+    if (eth_proto == 1544):  # if little endian 2054  0x0806
+        ARP_header, data = ARP_unpack(data)
+        print("Address Resolution Protocol : ")
+        for key, value in ARP_header.items():
+            print("\t", key, ' : ', value)
+    # Network Layer
+    elif (eth_proto == 8 or eth_proto == 56710):  # 2048
+        network_header, data = network_unpack(data)
+        print("Network Layer : ")
+        for key, value in network_header.items():
+            print("\t", key, ' : ', value)
+        # ICMP
+        if (network_header['upper_layer'] == 1):
+            type, code, checksum, data = icmp_unpack(network_header[-1])
+            print("ICMP :\n\tType : ", type, "\n\tCode : ", code,
+                  "\n\tChecksum : ", checksum, "\n\tData : ", data)
+        # TCP
+        elif(network_header['upper_layer'] == 6):
+            transport_header, data = transport_unpack(data, 'TCP')
+            print("Transmission Control Protocol : ")
+            for key, value in transport_header.items():
+                print("\t", key, ' : ', value)
+        # UDP
+        elif(network_header['upper_layer'] == 17):
+            transport_header, data = transport_unpack(data, 'UDP')
+            print("User Datagram Protocol : ")
+            for key, value in transport_header.items():
+                print("\t", key, ' : ', value)
+    else:
+        print("other type")
 
 # ------- SECTION -> checking functions-------
 
@@ -332,7 +393,7 @@ def save_pcap(packets:list):
 #     icmp_header = icmp_unpack(network_header[-1])
 # x = struct.pack('!HHHHHH',int("00",16),int("0a",16),int('95',16),int('9d',16),int('68',16),int('16',16))
 # print(get_mac_addr(x))
-    
+
 # tcp_header  = b'\x30\x39\x00\x50' # Source Port | Destination Port
 # tcp_header += b'\x00\x00\x00\x00' # Sequence Number
 # tcp_header += b'\x00\x00\x00\x00' # Acknowledgement Number
