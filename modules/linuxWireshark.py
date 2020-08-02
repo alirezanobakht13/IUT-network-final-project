@@ -427,7 +427,7 @@ def main(argv):
             socket.AF_PACKET, socket.SOCK_RAW, socket.ntohs(3))
         while True:
             data, addr = conn.recvfrom(65535)
-            pakets.append([time.time(), data])
+            pakets.append([time.time(), data, addr])
             show_summay(len(pakets)-1, data)
 
     # keyboard interrupt occurs:
@@ -444,6 +444,7 @@ def main(argv):
             if s == 'exit':
                 break
             s = int(s)
+            print(f'recieved from "{pakets[s][2][0]}" NIC')
             show_all(pakets[s][1])
             print(" ")
             print('Enter next packet number (or exit):')

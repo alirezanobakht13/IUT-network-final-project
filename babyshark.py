@@ -5,9 +5,21 @@ from modules import linuxWireshark as lw
 from modules import pronmap
 
 
-help_message = """
-this is help message
-"""  # TODO complete help message
+help_message = f"""Welcom to babyshark ^ ^
+this powerfull program can do three things for you:
+Sniff:
+    by running "python(3) {sys.argv[0]} sniff" you can sniff pakets like wireshark.
+    (if need help for this command run "python(3) {sys.argv[0]} sniff --help")
+    notice that if you want to use this command you should have super user access,
+    so run like this: "sudo python(3) {sys.argv[0]} sniff"
+scan:
+    scan ports of any host you want even better than nmap (no, not at all!).
+    (if need help for this command run "python(3) {sys.argv[0]} scan --help")
+autoresponse:
+    response pakets automatically!
+    (if need help for this command run "python(3) {sys.argv[0]} autoresponse --help")
+or you can run "python(3) {sys.argv[0]} --help" to see this message again!!
+"""
 if __name__ == "__main__":
     argv = sys.argv
     if len(argv) == 1:
@@ -15,7 +27,7 @@ if __name__ == "__main__":
             f'bad command. run "python(3) {argv[0]} --help" if you need help')
 
     elif argv[1] == 'sniff':
-        lw.main(argv[1:])
+        lw.main(argv)
     elif argv[1] == 'scan':
         pass  # TODO add scan cli here
     elif argv[1] == 'autoresponse':
