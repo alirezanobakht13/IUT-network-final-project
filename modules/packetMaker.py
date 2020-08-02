@@ -3,6 +3,7 @@ import socket
 
 
 def checksum(data):
+    """ this function get data in bytes and return its checksum """
     size = len(data)
     arr = None
     if size % 2 == 0:
@@ -19,6 +20,8 @@ def checksum(data):
 
 
 def tcp_header_maker(dst_port, src_ip_addr, dst_ip_addr, ack=0, syn=0, fin=0, window_size=1234, src_port=1234):
+    """ make tcp header based on inputs and return it as a byte string.
+    source IP address and destination IP address is need because of calculating checksum but not included in tcp header """
     seq_number = 0
     ack_number = 0
     check_sum = 0

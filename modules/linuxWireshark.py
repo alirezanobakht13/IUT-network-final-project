@@ -6,6 +6,7 @@ import time
 import os
 import datetime
 
+
 def get_mac_addr(bytes_addr):
     bytes_str = map('{:02x}'.format, bytes_addr)
     mac_addr = ':'.join(bytes_str).upper()
@@ -259,7 +260,7 @@ def DNS(data):
         'auth_count': No_auths,
         'additional_count': No_additional,
         'questions': questions,
-        'answer': answers
+        'answers': answers
     }
 
     return unpacked
@@ -268,16 +269,13 @@ def DNS(data):
 def app_unpack(data, version):
     # TODO : check is decode type for http true of not
     if version == 'http':
-        return {
-            'type': 'http',
-            'content': data.decode('ascii')
-        }
+        return data.decode('ascii')
 
-    if version == 'dns':
-        return {
-            'type': 'dns',
-            'content': DNS(data)
-        }
+    elif version == 'dns':
+        return DNS(data)
+
+    else:
+        return data
 
 
 def save_pcap(packets: list):
@@ -322,27 +320,28 @@ def save_pcap(packets: list):
         0].replace(':', '-') + '.pcap'
     with open(os.path.join(save_dir, file_name), 'w+b') as f:
         f.write(data)
+    return os.path.join(save_dir, file_name)
 
 
-def show_summay(raw_data):
+def show_summay(index, raw_data):
     dest_mac, src_mac, eth_proto, data = data_link_unpack(raw_data)
     if (eth_proto == 1544):  # if little endian 2054  0x0806
         ARP_header, data = ARP_unpack(data)
-        print(ARP_header['sender_IP_add'], "\t",
+        print(f"#{index}", ARP_header['sender_IP_add'], "\t",
               ARP_header['sender_IP_add'], "\t", "ARP")
     elif (eth_proto == 8 or eth_proto == 56710):  # 2048
         network_header, data = network_unpack(data)
         if (network_header['upper_layer'] == 1):
-            print(network_header['32_bit_sourceIP'], "\t",
+            print(f"#{index}", network_header['32_bit_sourceIP'], "\t",
                   network_header['32_bit_destinationIP'], "\t", "ICMP")
         elif(network_header['upper_layer'] == 6):
-            print(network_header['32_bit_sourceIP'], "\t",
+            print(f"#{index}", network_header['32_bit_sourceIP'], "\t",
                   network_header['32_bit_destinationIP'], "\t", "TCP")
         elif(network_header['upper_layer'] == 17):
-            print(network_header['32_bit_sourceIP'], "\t",
+            print(f"#{index}", network_header['32_bit_sourceIP'], "\t",
                   network_header['32_bit_destinationIP'], "\t", "UDP")
     else:
-        print(dest_mac, "\t", src_mac, "\tother type")
+        print(f"#{index}", dest_mac, "\t", src_mac, "\tother type")
 
 
 def show_all(raw_data):
@@ -373,14 +372,86 @@ def show_all(raw_data):
             print("Transmission Control Protocol : ")
             for key, value in transport_header.items():
                 print("\t", key, ' : ', value)
+            prtcl = transport_header['service']
+            if prtcl == 'dns':
+                dns_header = app_unpack(data, 'dns')
+                for key, value in dns_header.items():
+                    if key != 'questions' or key != 'answers':
+                        print('\t', key, ': ', value)
+                print("\tquestions:")
+                print("\t(domain,type name,type class)")
+                for q in dns_header['questions']:
+                    print(f'\t({q[0]},{q[1]},{q[2]})')
+                print('\tanswers:')
+                print("\t(name,type name,class name,ttl,rdlength,rdata)")
+                for ans in dns_header['answers']:
+                    print(
+                        f'\t({ans[0]},{ans[1]},{ans[2]},{ans[3]},{ans[4]},{ans[5]})')
+            else:
+                print("\t", app_unpack(data, prtcl))
         # UDP
         elif(network_header['upper_layer'] == 17):
             transport_header, data = transport_unpack(data, 'UDP')
             print("User Datagram Protocol : ")
             for key, value in transport_header.items():
                 print("\t", key, ' : ', value)
+            prtcl = transport_header['service']
+            if prtcl == 'dns':
+                dns_header = app_unpack(data, 'dns')
+                for key, value in dns_header.items():
+                    if key != 'questions' or key != 'answers':
+                        print('\t', key, ': ', value)
+                print("\tquestions:")
+                print("\t(domain,type name,type class)")
+                for q in dns_header['questions']:
+                    print(f'\t({q[0]},{q[1]},{q[2]})')
+                print('\tanswers:')
+                print("\t(name,type name,class name,ttl,rdlength,rdata)")
+                for ans in dns_header['answers']:
+                    print(
+                        f'\t({ans[0]},{ans[1]},{ans[2]},{ans[3]},{ans[4]},{ans[5]})')
+            else:
+                print("\t", app_unpack(data, prtcl))
     else:
         print("other type")
+
+
+def main(argv):
+    print('*** Press ctrl^c to stop Snifing ***')
+    print(" ")
+
+    pakets = []
+    try:
+        # creating socket:
+        conn = socket.socket(
+            socket.AF_PACKET, socket.SOCK_RAW, socket.ntohs(3))
+        while True:
+            data, addr = conn.recvfrom(65535)
+            pakets.append([time.time(), data])
+            show_summay(len(pakets)-1, data)
+
+    # keyboard interrupt occurs:
+    except KeyboardInterrupt:
+        # TODO : add flag for saving if you want:
+        location = save_pcap(pakets)
+
+        # see paket in detail
+        print(" ")
+        print(f"{ len(pakets) } pakets was sniffed and saved in { location }")
+        print("Enter the number of packet you want to see it in detail (or type exit):")
+        while True:
+            s = input()
+            if s == 'exit':
+                break
+            s = int(s)
+            show_all(pakets[s][1])
+            print(" ")
+            print('Enter next packet number (or exit):')
+
+    # something like network goes wrong:
+    except:
+        print('Something went wrong!')
+
 
 # ------- SECTION -> checking functions-------
 

@@ -2,10 +2,29 @@ import sys
 import socket
 import time
 from modules import linuxWireshark as lw
+from modules import pronmap
 
-if __name__=="__main__":
-    pass
 
+help_message = """
+this is help message
+"""  # TODO complete help message
+if __name__ == "__main__":
+    argv = sys.argv
+    if len(argv) == 1:
+        print(
+            f'bad command. run "python(3) {argv[0]} --help" if you need help')
+
+    elif argv[1] == 'sniff':
+        lw.main(argv[1:])
+    elif argv[1] == 'scan':
+        pass  # TODO add scan cli here
+    elif argv[1] == 'autoresponse':
+        pass  # TODO add autoresponse cli here
+    elif argv[1] == '--help':
+        print(help_message)
+    else:
+        print(
+            f'command not found.  run "python(3) {argv[0]} --help" if you need help')
 
 # SECTION ---> test:
 # conn = socket.socket(socket.AF_PACKET,socket.SOCK_RAW,socket.ntohs(3))
@@ -49,5 +68,23 @@ if __name__=="__main__":
 #             print(lw.app_unpack(data,tcpheader['service'])['content'])
 
 
+# def connect_scan(host, portlst):
+#     s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+#     lst = []
+#     for port in portlst:
+#         try:
+#             s.connect((host, port))
+#             start_time = time.time()
+#             print("Port open: " + str(port))
+#             s.close()
+#             lst.append(port)
+#         except:
+#             print("Port closed: " + str(port))
+#     return lst
 
-print(bin(1))
+
+# host = "10.10.10.1"
+# portlst = [21, 22, 80, 8080]
+# lst = []
+# lst = connect_scan(host, portlst)
+# print(lst)
