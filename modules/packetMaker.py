@@ -19,7 +19,7 @@ def checksum(data):
     return (~ch_sum) & 0xffff
 
 
-def tcp_header_maker(dst_port, src_ip_addr: str, dst_ip_addr: str, ack=0, syn=0, fin=0, window_size=64240, src_port=1234):
+def tcp_header_maker(dst_port, src_ip_addr: str, dst_ip_addr: str, ack=0, syn=0, fin=0, window_size=1024, src_port=1234):
     """ make tcp header based on inputs and return it as a byte string.
     source IP address and destination IP address is need because of calculating checksum but not included in tcp header """
     seq_number = 0
