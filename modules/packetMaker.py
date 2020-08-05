@@ -19,7 +19,7 @@ def checksum(data):
     return (~ch_sum) & 0xffff
 
 
-def tcp_header_maker(dst_port, src_ip_addr, dst_ip_addr, ack=0, syn=0, fin=0, window_size=1234, src_port=1234):
+def tcp_header_maker(dst_port, src_ip_addr: str, dst_ip_addr: str, ack=0, syn=0, fin=0, window_size=64240, src_port=1234):
     """ make tcp header based on inputs and return it as a byte string.
     source IP address and destination IP address is need because of calculating checksum but not included in tcp header """
     seq_number = 0
@@ -35,7 +35,7 @@ def tcp_header_maker(dst_port, src_ip_addr, dst_ip_addr, ack=0, syn=0, fin=0, wi
         (psh << 3) + (rst << 2) + (syn << 1) + fin
     urg_ptr = 0
 
-    tcp_paket = struct.pack('HHIIBBHHH',
+    tcp_paket = struct.pack('!HHIIBBHHH',
                             src_port,
                             dst_port,
                             seq_number,
@@ -46,14 +46,54 @@ def tcp_header_maker(dst_port, src_ip_addr, dst_ip_addr, ack=0, syn=0, fin=0, wi
                             check_sum,
                             urg_ptr
                             )
-
-    pseudo_hdr = struct.pack('4s 4s HH', socket.inet_aton(
-        src_ip_addr), socket.inet_aton(dst_ip_addr), socket.IPPROTO_TCP, len(tcp_paket))
+    placeholder = 0
+    pseudo_hdr = struct.pack('!4s4sBBH', socket.inet_aton(
+        src_ip_addr), socket.inet_aton(dst_ip_addr), placeholder, socket.IPPROTO_TCP, len(tcp_paket))
 
     cksm = checksum(pseudo_hdr + tcp_paket)
-
+    cksm = struct.pack('!H', cksm)
     tcp_paket = tcp_paket[:16] + cksm + tcp_paket[18:]
     return tcp_paket
+
+
+def ipv4_header_maker(src_ip_addr: str, dst_ip_addr: str, identification=36512, ttl=255):
+    version = 4
+    ihl = 5
+    tmp = 0
+    tmp_len = 0  # kernel will fix this
+    flag_frag = 0
+    proto = socket.IPPROTO_TCP
+    cksum = 0
+    s_ip = socket.inet_aton(src_ip_addr)
+    d_ip = socket.inet_aton(dst_ip_addr)
+
+    paket = struct.pack('!BBHHHBBH4s4s',
+                        (version << 4)+ihl,
+                        tmp,
+                        tmp_len,
+                        identification,
+                        flag_frag,
+                        ttl,
+                        proto,
+                        cksum,
+                        s_ip,
+                        d_ip
+                        )
+    cksum = checksum(paket)
+    cksum = struct.pack('!H', cksum)
+    return paket[:10]+cksum+paket[12:]
+
+# get ip and port a bit tricky! but there is better harder way! do it later:D
+
+
+def get_ip_port():
+    try:
+        s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        s.connect(('8.8.8.8', 80))
+        tmp = s.getsockname()
+        return tmp
+    except:
+        print('something wrong. check your network and try again')
 
 
 # Ports assignment:

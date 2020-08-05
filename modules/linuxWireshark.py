@@ -88,7 +88,7 @@ def transport_unpack(data, version):
             'src_port': hdr[0],
             'dst_port': hdr[1],
             'length': hdr[2],
-            'checksum': hdr[3]
+            'checksum': hex(hdr[3])
         }
         header['service'] = packetMaker.services.get(
             str(header['dst_port']), None)
@@ -113,7 +113,7 @@ def transport_unpack(data, version):
             'SYN': (hdr[5] >> 1) & 0x1,
             'FIN': hdr[5] & 0x1,
             'window_size': hdr[6],
-            'checksum': hdr[7],
+            'checksum': hex(hdr[7]),
             'urg_ptr': hdr[8],
             'options': data[160:(32*(hdr[4] >> 4))]
         }
