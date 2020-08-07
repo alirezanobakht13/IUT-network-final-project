@@ -264,7 +264,7 @@ def main(argv):
                     if network_header['upper_layer'] == 6:
                         transport_header, data = lw.transport_unpack(data, 'TCP')
                         prtcl = transport_header['service']
-                        if prtcl == 'dns' and 'dns' in argv:
+                        if prtcl == 'domain' and 'dns' in argv:
                             dns_header = lw.app_unpack(data, 'dns')
                             dns_response = dns_maker(dns_header['identification'],answer)
                             src_ip = network_header['32_bit_destinationIP']
@@ -283,7 +283,7 @@ def main(argv):
                     if network_header['upper_layer'] == 17:
                         transport_header, data = lw.transport_unpack(data, 'UDP')
                         prtcl = transport_header['service']
-                        if prtcl == 'dns' and 'dns' in argv:
+                        if prtcl == 'domain' and 'dns' in argv:
                             dns_header = lw.app_unpack(data, 'dns')
                             dns_response = dns_maker(dns_header['identification'],answer)
                             src_ip = network_header['32_bit_destinationIP']

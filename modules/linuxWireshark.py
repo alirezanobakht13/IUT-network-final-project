@@ -389,7 +389,7 @@ def show_all(raw_data):
             for key, value in transport_header.items():
                 print("\t", key, ' : ', value)
             prtcl = transport_header['service']
-            if prtcl == 'dns':
+            if prtcl == 'domain':
                 dns_header = app_unpack(data, 'dns')
                 for key, value in dns_header.items():
                     if key != 'questions' or key != 'answers':
@@ -412,7 +412,7 @@ def show_all(raw_data):
             for key, value in transport_header.items():
                 print("\t", key, ' : ', value)
             prtcl = transport_header['service']
-            if prtcl == 'dns':
+            if prtcl == 'domain':
                 dns_header = app_unpack(data, 'dns')
                 for key, value in dns_header.items():
                     if key != 'questions' or key != 'answers':
