@@ -73,8 +73,8 @@ def network_unpack(data):
 
 
 def icmp_unpack(data):
-    type, code, checksum = struct.unpack('! B B H', data[:4])
-    return type, code, hex(checksum), repr(data[4:])
+    tp, code, checksum = struct.unpack('! B B H', data[:4])
+    return tp, code, hex(checksum), repr(data[4:])
 
 
 def transport_unpack(data, version):
@@ -379,8 +379,8 @@ def show_all(raw_data):
             print("\t", key, ' : ', value)
         # ICMP
         if (network_header['upper_layer'] == 1):
-            type, code, checksum, data = icmp_unpack(network_header[-1])
-            print("ICMP :\n\tType : ", type, "\n\tCode : ", code,
+            tp, code, checksum, data = icmp_unpack(network_header[-1])
+            print("ICMP :\n\tType : ", tp, "\n\tCode : ", code,
                   "\n\tChecksum : ", checksum, "\n\tData : ", data)
         # TCP
         elif(network_header['upper_layer'] == 6):
