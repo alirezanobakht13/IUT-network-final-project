@@ -73,7 +73,7 @@ def network_unpack(data):
 
 
 def icmp_unpack(data):
-    type, code, checksum = unpack('! B B H', data[:4])
+    type, code, checksum = struct.unpack('! B B H', data[:4])
     return type, code, hex(checksum), repr(data[4:])
 
 
@@ -323,25 +323,41 @@ def save_pcap(packets: list):
     return os.path.join(save_dir, file_name)
 
 
-def show_summay(index, raw_data):
+# def show_summay(index, raw_data):
+#     dest_mac, src_mac, eth_proto, data = data_link_unpack(raw_data)
+#     if (eth_proto == 1544):  # if little endian 2054  0x0806
+#         ARP_header, data = ARP_unpack(data)
+#         print(f"#{index}", ARP_header['sender_IP_add'], "\t",
+#               ARP_header['sender_IP_add'], "\t", "ARP")
+#     elif (eth_proto == 8 or eth_proto == 56710):  # 2048
+#         network_header, data = network_unpack(data)
+#         if (network_header['upper_layer'] == 1):
+#             print(f"#{index}", network_header['32_bit_sourceIP'], "\t",
+#                   network_header['32_bit_destinationIP'], "\t", "ICMP")
+#         elif(network_header['upper_layer'] == 6):
+#             print(f"#{index}", network_header['32_bit_sourceIP'], "\t",
+#                   network_header['32_bit_destinationIP'], "\t", "TCP")
+#         elif(network_header['upper_layer'] == 17):
+#             print(f"#{index}", network_header['32_bit_sourceIP'], "\t",
+#                   network_header['32_bit_destinationIP'], "\t", "UDP")
+#     else:
+#         print(f"#{index}", dest_mac, "\t", src_mac, "\tother type")
+
+def show_summay(index,raw_data):
     dest_mac, src_mac, eth_proto, data = data_link_unpack(raw_data)
-    if (eth_proto == 1544):  # if little endian 2054  0x0806
+    if (eth_proto == 1544):  
         ARP_header, data = ARP_unpack(data)
-        print(f"#{index}", ARP_header['sender_IP_add'], "\t",
-              ARP_header['sender_IP_add'], "\t", "ARP")
+        print(f"#{index}",f"{ARP_header['sender_IP_add']:<20}{ARP_header['sender_IP_add']:^15}{'ARP':>20}")
     elif (eth_proto == 8 or eth_proto == 56710):  # 2048
         network_header, data = network_unpack(data)
         if (network_header['upper_layer'] == 1):
-            print(f"#{index}", network_header['32_bit_sourceIP'], "\t",
-                  network_header['32_bit_destinationIP'], "\t", "ICMP")
+            print(f"#{index}",f"{network_header['32_bit_sourceIP']:<20}{network_header['32_bit_destinationIP']:^15}{'ICMP':>20}")
         elif(network_header['upper_layer'] == 6):
-            print(f"#{index}", network_header['32_bit_sourceIP'], "\t",
-                  network_header['32_bit_destinationIP'], "\t", "TCP")
+            print(f"#{index}",f"{network_header['32_bit_sourceIP']:<20}{network_header['32_bit_destinationIP']:^15}{'TCP':>20}")
         elif(network_header['upper_layer'] == 17):
-            print(f"#{index}", network_header['32_bit_sourceIP'], "\t",
-                  network_header['32_bit_destinationIP'], "\t", "UDP")
+            print(f"#{index}",f"{network_header['32_bit_sourceIP']:<20}{network_header['32_bit_destinationIP']:^15}{'UDP':>20}")
     else:
-        print(f"#{index}", dest_mac, "\t", src_mac, "\tother type")
+        print(f"#{index}",f"{dest_mac:<20}{ src_mac:^15}{'other type':>20}")        
 
 
 def show_all(raw_data):

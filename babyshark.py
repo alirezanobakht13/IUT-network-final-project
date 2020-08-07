@@ -3,12 +3,13 @@ import socket
 import time
 from modules import linuxWireshark as lw
 from modules import pronmap
+from modules import autoresponse
 
 
 help_message = f"""Welcome to babyshark ^ ^
 this powerfull program can do three things for you:
 Sniff:
-    by running "python(3) {sys.argv[0]} sniff" you can sniff pakets like wireshark.
+    by running "python(3) {sys.argv[0]} sniff" you can sniff packets like wireshark.
     (if need help for this command run "python(3) {sys.argv[0]} sniff --help")
     notice that if you want to use this command you should have super user access,
     so run like this: "sudo python(3) {sys.argv[0]} sniff"

@@ -552,7 +552,7 @@ scan-type:
     -WS: window scan
 delay(optional): amount of time in seconds to be delayed for sending next packet and also waiting for answers. defualt=3.
 #threads(optional): number of threads sending packet simultaneously. it should be greater than or equal to 1 and smaller than 8 (more than 8 thread is not effecient). defualt=5
-or run python(3) babyshark scan --help to see this message again!"""
+or run 'python(3) babyshark scan --help' to see this message again!"""
 
 
 def main(argv: list):
@@ -581,12 +581,17 @@ def main(argv: list):
                     dst, port_lists, delay, thread_count)
                 end_time = time.time()
                 if len(connected_list) == 0:
-                    print(f'all {ep-sp+1} ports were close.')
+                    print(f'all {ep-sp+1} ports were closed.')
+                elif len(connect_list) == len(port_lists):
+                    print(f'all {ep-sp+1} ports were open.')
                 else:
                     print(f"{'PORT':<20}{'STATE':^15}{'SERVICE':>20}")
                     for cnn in connected_list:
                         service = packetMaker.services.get(str(cnn), "unknown")
                         print(f"{cnn:<20}{'open':^15}{service:>20}")
+                    print(" ")
+                    print(f"other {len(port_lists)-len(connected_list)} ports are closed.")
+                    
                 print(' ')
                 print(f'connect scan finished in {end_time-start_time} secs.')
 
@@ -618,13 +623,13 @@ def main(argv: list):
                             print(f"{port:<20}{'filtered':^15}{service:>20}")
 
                 print(' ')
-                print(f'fin scan finished in {end_time-start_time} secs.')
+                print(f'syn scan finished in {end_time-start_time} secs.')
 
             # ------------------------------------SECTION: ack scan print-------------------------------------------
             elif '-AS' in argv:
                 start_time = time.time()
                 print(
-                    f'fin scan of {dst}({socket.gethostbyname(dst)}) started at {datetime.datetime.fromtimestamp(start_time)} ')
+                    f'ack scan of {dst}({socket.gethostbyname(dst)}) started at {datetime.datetime.fromtimestamp(start_time)} ')
                 print(' ')
                 unfiltered_ports = ack_scan(
                     dst, port_lists, delay, thread_count)
@@ -726,10 +731,12 @@ def main(argv: list):
 
                 print(' ')
                 print(f'window scan finished in {end_time-start_time} secs.')
+            
+            else:
+                print("you should select type of scan. see 'python(3) babyshark scan --help' for more help")
 
         except KeyboardInterrupt:
             print(" ")
             print("KeyboardInterrupt")
         except:
-            print(" ")
-            print("something went wrong. check your internet and also make sure command is entered correctly. further help by running python(3) babyshark scan --help")
+            print("something went wrong. check your internet and also make sure command is entered correctly. further help by running 'python(3) babyshark scan --help'")
