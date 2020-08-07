@@ -66,8 +66,8 @@ def network_unpack(data):
             'payload_len': hdr[1],
             'upper_layer': hdr[2],
             'hop_limit': hdr[3],
-            '128_bit_sourceIP': socket.inet_ntoa(hdr[4]),
-            '128_bit_destinationIP': socket.inet_ntoa(hdr[5])
+            '128_bit_sourceIP': socket.inet_ntop(hdr[4]),
+            '128_bit_destinationIP': socket.inet_ntop(hdr[5])
         }
         return header, data[40:]
 

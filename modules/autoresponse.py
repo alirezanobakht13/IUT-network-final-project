@@ -52,6 +52,7 @@ def dns_maker(identification:int,answers: list):
 
     return dns_header + byte_ans
 
+
 def dns_response():
     answer = [] ################ you should answers you want
 
@@ -179,14 +180,12 @@ def icmp_reply_maker(icmp_packet):
         address_mask = socket.inet_aton("255.255.255.0")
         packet = struct.pack('! B B H H H I', Type, code,
                              check_sum, identifier, sequence_num, address_mask)
-    # Mobile Registration in UDP!!!!
-    # elif typ == 35:
-    #    Type = 36
+    
 
     # Domain Name
     elif typ == 37 and code == 0:
         Type = 38
-        identifier, sequence_num, addr_mask = struct.unpack('!H H I', dat[:4])
+        identifier, sequence_num = struct.unpack('!H H', dat[:4])
         check_sum = 0
         time_to_live = bin(1000)
         packet = struct.pack('! B B H H H I', Type, code,
@@ -217,6 +216,8 @@ or run sudo python(3) babyshark autoresponse --help to see this again!"""
 def main(argv):
     if '--help' in argv:
         print(message)
+    elif not (('dns' in argv) or ('icmp' in argv) or ('arp' in argv)):
+        print("no type defiend. please run 'python(3) babyshark autoresponse --help' to see help")
     else:
         try:
             dns_answers = [] ################ you should fill it with RR
@@ -229,15 +230,24 @@ def main(argv):
                 dest_mac, src_mac, eth_proto, data = lw.data_link_unpack(raw_data)
 
                 if (eth_proto == 1544):
-                    arp_packet = arp_reply_maker(data)
-                    ethernet_header = ethernet_header_maker(raw_data)
-                    packet = b''
-                    packet = ethernet_header + arp_packet
-                    sock_r = socket.socket(socket.AF_PACKET, socket.SOCK_RAW)
-                    #print(packet)
-                    sock_r.sendto(packet,addr)
-                    #break
-                    ## print something here
+                    ARP_header, dat = lw.ARP_unpack(data)
+
+                    if int(ARP_header['operation']) == 1:
+                        arp_packet = arp_reply_maker(data)
+                        ethernet_header = ethernet_header_maker(raw_data)
+                        packet = b''
+                        packet = ethernet_header + arp_packet
+                        sock_r = socket.socket(socket.AF_PACKET, socket.SOCK_RAW)
+                        sock_r.sendto(packet,addr)
+                        print("Address Resolution Protocol request: ")
+                        for key, value in ARP_header.items():
+                            print("\t", key, ' : ', value)
+                        ARP_header, data = lw.ARP_unpack(arp_packet)
+                        print("Address Resolution Protocol reply: ")
+                        for key, value in ARP_header.items():
+                            print("\t", key, ' : ', value)
+                        #break
+                        ## print something here
 
                 if eth_proto == 8 or eth_proto == 56710:
                     network_header, data = lw.network_unpack(data)

@@ -17,7 +17,7 @@ scan:
     scan ports of any host you want even better than nmap (No, not at all!).
     (if need help for this command run "python(3) {sys.argv[0]} scan --help")
 autoresponse:
-    response pakets automatically!
+    response packets automatically!
     (if need help for this command run "python(3) {sys.argv[0]} autoresponse --help")
 or you can run "python(3) {sys.argv[0]} --help" to see this message again!!
 """
@@ -32,7 +32,7 @@ if __name__ == "__main__":
     elif argv[1] == 'scan':
         pronmap.main(argv[1:])
     elif argv[1] == 'autoresponse':
-        pass  # TODO add autoresponse cli here
+        autoresponse.main(argv[1:])
     elif argv[1] == '--help':
         print(help_message)
     else:
